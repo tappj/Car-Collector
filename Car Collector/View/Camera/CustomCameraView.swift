@@ -17,6 +17,7 @@ struct CustomCameraView: View {
     @State private var identifiedCar = ""
     @State private var showFlash = false
     @State private var cameraReady = false
+    @State private var showCaptureFrame = true
     
     var body: some View {
         ZStack {
@@ -256,6 +257,51 @@ struct CustomCameraView: View {
                     .transition(.opacity)
             }
             
+            // Capture frame overlay
+            if showCaptureFrame && !isIdentifying {
+                GeometryReader { geometry in
+                    let frameWidth = geometry.size.width * 0.82
+                    let frameHeight = geometry.size.height * 0.64
+                    let cornerLength: CGFloat = 28
+                    let cornerThickness: CGFloat = 3.5
+                    let frameX = geometry.size.width / 2
+                    let frameY = (geometry.size.height / 2) - 30
+                    
+                    // Top-left corner
+                    Path { path in
+                        path.move(to: CGPoint(x: frameX - frameWidth/2, y: frameY - frameHeight/2 + cornerLength))
+                        path.addLine(to: CGPoint(x: frameX - frameWidth/2, y: frameY - frameHeight/2))
+                        path.addLine(to: CGPoint(x: frameX - frameWidth/2 + cornerLength, y: frameY - frameHeight/2))
+                    }
+                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                    
+                    // Top-right corner
+                    Path { path in
+                        path.move(to: CGPoint(x: frameX + frameWidth/2 - cornerLength, y: frameY - frameHeight/2))
+                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY - frameHeight/2))
+                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY - frameHeight/2 + cornerLength))
+                    }
+                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                    
+                    // Bottom-left corner
+                    Path { path in
+                        path.move(to: CGPoint(x: frameX - frameWidth/2, y: frameY + frameHeight/2 - cornerLength))
+                        path.addLine(to: CGPoint(x: frameX - frameWidth/2, y: frameY + frameHeight/2))
+                        path.addLine(to: CGPoint(x: frameX - frameWidth/2 + cornerLength, y: frameY + frameHeight/2))
+                    }
+                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                    
+                    // Bottom-right corner
+                    Path { path in
+                        path.move(to: CGPoint(x: frameX + frameWidth/2 - cornerLength, y: frameY + frameHeight/2))
+                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY + frameHeight/2))
+                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY + frameHeight/2 - cornerLength))
+                    }
+                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                }
+                .ignoresSafeArea()
+            }
+            
             if isIdentifying {
                 ScanningOverlay()
             }
@@ -266,6 +312,7 @@ struct CustomCameraView: View {
                     onScanAnother: {
                         identifiedCar = ""
                         capturedImage = nil
+                        showCaptureFrame = true
                     },
                     onViewCollection: {
                         presentationMode.wrappedValue.dismiss()
@@ -315,11 +362,19 @@ struct CustomCameraView: View {
     }
     
     func capturePhoto() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            showFlash = true
+        // Hide capture frame when taking photo
+        withAnimation(.easeInOut(duration: 0.15)) {
+            showCaptureFrame = false
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        // Flash effect
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showFlash = true
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.easeInOut(duration: 0.2)) {
                 showFlash = false
             }
