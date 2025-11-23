@@ -63,56 +63,47 @@ struct CustomCameraView: View {
     }
     
     struct ScanningOverlay: View {
-        @State private var scanPosition: CGFloat = 0
-        @State private var pulseOpacity: Double = 0.3
+        @State private var rotation: Double = 0
+        @State private var dotCount: Int = 0
+        
+        let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
         
         var body: some View {
             ZStack {
-                Color.blue.opacity(0.2)
-                    .edgesIgnoringSafeArea(.all)
-                
-                VStack(spacing: 0) {
-                    ForEach(0..<5) { i in
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [.clear, .cyan, .clear]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(height: 2)
-                            .offset(y: scanPosition + CGFloat(i * 100))
-                    }
-                }
-                .opacity(0.8)
-                
-                Rectangle()
-                    .stroke(Color.cyan, lineWidth: 3)
-                    .opacity(pulseOpacity)
-                    .edgesIgnoringSafeArea(.all)
+                // Modern minimal loading spinner
+                Circle()
+                    .trim(from: 0, to: 0.7)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(0.8),
+                                Color.white.opacity(0.2)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    )
+                    .frame(width: 80, height: 80)
+                    .rotationEffect(.degrees(rotation))
                 
                 VStack {
                     Spacer()
                     
-                    Text("Analyzing Image...")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                    Text("Analyzing" + String(repeating: ".", count: dotCount))
+                        .font(.system(size: 20, design: .monospaced))
+                        .fontWeight(.medium)
                         .foregroundColor(.white)
-                        .padding()
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(15)
                         .padding(.bottom, 100)
                 }
             }
             .onAppear {
-                withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                    scanPosition = UIScreen.main.bounds.height
+                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    rotation = 360
                 }
-                
-                withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-                    pulseOpacity = 0.8
-                }
+            }
+            .onReceive(timer) { _ in
+                dotCount = (dotCount + 1) % 4
             }
         }
     }
@@ -262,8 +253,8 @@ struct CustomCameraView: View {
                             .transition(.opacity)
                     }
                     
-                    // Photo review image - replaces camera when reviewing
-                    if isReviewingPhoto, let image = capturedImage {
+                    // Photo review image - replaces camera when reviewing or identifying
+                    if (isReviewingPhoto || isIdentifying), let image = capturedImage {
                         Color.black
                             .ignoresSafeArea()
                         
