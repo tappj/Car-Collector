@@ -15,16 +15,49 @@ struct CollectionView: View {
     @State private var showCarDetail = false
     @State private var carToDelete: Car?
     @State private var showDeleteConfirmation = false
+    @State private var searchText: String = ""
+    @State private var selectedCategory: CarCategory?
+    @State private var showFavoritesOnly: Bool = false
+    @FocusState private var isSearchFieldFocused: Bool
+    
+    // Filtered cars based on search and filters
+    var filteredCars: [Car] {
+        var result = cars
+        
+        // Apply search filter
+        if !searchText.isEmpty {
+            result = result.filter { car in
+                car.name.lowercased().contains(searchText.lowercased())
+            }
+        }
+        
+        // Apply category filter
+        if let category = selectedCategory {
+            result = result.filter { car in
+                car.carCategory == category
+            }
+        }
+        
+        // Apply favorites filter
+        if showFavoritesOnly {
+            result = result.filter { car in
+                car.isFavorite == true
+            }
+        }
+        
+        return result
+    }
     
     var body: some View {
         VStack(spacing: 0) {
+            // Header with title and count
             HStack {
                 Text("My Collection")
                     .font(.system(size: 34, weight: .bold))
                 
                 Spacer()
                 
-                Text("\(cars.count) Cars")
+                Text("\(filteredCars.count) Cars")
                     .font(.system(size: 20))
                     .foregroundColor(.blue)
                     .padding(.horizontal, 15)
@@ -33,6 +66,79 @@ struct CollectionView: View {
                     .cornerRadius(20)
             }
             .padding()
+            .background(Color.white)
+            
+            // Search Bar
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
+                
+                TextField("Search cars...", text: $searchText)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .focused($isSearchFieldFocused)
+                
+                if !searchText.isEmpty {
+                    Button(action: {
+                        searchText = ""
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .padding(12)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(10)
+            .padding(.horizontal)
+            .padding(.top, 10)
+            
+            // Filter Buttons
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    // Favorites Filter
+                    Button(action: {
+                        showFavoritesOnly.toggle()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: showFavoritesOnly ? "star.fill" : "star")
+                            Text("Favorites")
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(showFavoritesOnly ? .white : .primary)
+                        .padding(.horizontal, 15)
+                        .padding(.vertical, 8)
+                        .background(showFavoritesOnly ? Color.yellow : Color.gray.opacity(0.15))
+                        .cornerRadius(20)
+                    }
+                    
+                    // Category Filters
+                    ForEach(CarCategory.allCases, id: \.self) { category in
+                        Button(action: {
+                            if selectedCategory == category {
+                                selectedCategory = nil
+                            } else {
+                                selectedCategory = category
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(categoryColor(for: category))
+                                    .frame(width: 8, height: 8)
+                                
+                                Text(category.rawValue)
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(selectedCategory == category ? .white : .primary)
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 8)
+                            .background(selectedCategory == category ? categoryColor(for: category) : Color.gray.opacity(0.15))
+                            .cornerRadius(20)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+            }
             .background(Color.white)
             
             if isLoading {
@@ -58,9 +164,27 @@ struct CollectionView: View {
                         .padding(.horizontal, 40)
                 }
                 Spacer()
+            } else if filteredCars.isEmpty {
+                Spacer()
+                VStack(spacing: 20) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 80))
+                        .foregroundColor(.gray.opacity(0.5))
+                    
+                    Text("No cars found")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.gray)
+                    
+                    Text("Try adjusting your search or filters")
+                        .font(.body)
+                        .foregroundColor(.gray.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                Spacer()
             } else {
                 List {
-                    ForEach(cars) { car in
+                    ForEach(filteredCars) { car in
                         Button(action: {
                             openCarDetail(car)
                         }) {
@@ -205,6 +329,21 @@ struct CollectionView: View {
             } else {
                 print("✅ Car deleted successfully from Firestore")
             }
+        }
+    }
+    
+    func categoryColor(for category: CarCategory) -> Color {
+        switch category {
+        case .common:
+            return Color.gray
+        case .uncommon:
+            return Color.blue
+        case .rare:
+            return Color.purple
+        case .exotic:
+            return Color.orange
+        case .legendary:
+            return Color(red: 1.0, green: 0.84, blue: 0.0) // Gold
         }
     }
 }
