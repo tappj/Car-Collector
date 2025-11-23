@@ -12,68 +12,138 @@ struct HomeView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                // App Title
-                Text("Car Collector")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 50)
+            VStack(spacing: 0) {
+                // Header Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Car Collector")
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(.primary)
+                    
+                    Text("Discover and collect rare vehicles")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 60)
+                .padding(.bottom, 40)
+                
+                // Quick Stats Card (Optional - shows collection overview)
+                VStack(spacing: 12) {
+                    HStack(spacing: 20) {
+                        // Total Cars
+                        VStack(spacing: 4) {
+                            Text("0")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Cars")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        
+                        Divider()
+                            .frame(height: 40)
+                        
+                        // Total Points
+                        VStack(spacing: 4) {
+                            Text("0")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Points")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        
+                        Divider()
+                            .frame(height: 40)
+                        
+                        // Rarest
+                        VStack(spacing: 4) {
+                            Text("—")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("Rarest")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.vertical, 20)
+                .padding(.horizontal, 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemGray6))
+                )
+                .padding(.horizontal, 24)
                 
                 Spacer()
                 
                 // Main Action Buttons
-                VStack(spacing: 20) {
-                    // Scan Car Button (Large, primary action)
+                VStack(spacing: 16) {
+                    // Scan Car Button
                     Button(action: {
                         showCamera = true
                     }) {
-                        VStack(spacing: 15) {
+                        HStack(spacing: 16) {
                             Image(systemName: "camera.fill")
-                                .font(.system(size: 60))
+                                .font(.system(size: 24, weight: .semibold))
                                 .foregroundColor(.white)
                             
-                            Text("Scan Car")
-                                .font(.title)
-                                .fontWeight(.bold)
+                            Text("Scan New Car")
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.8))
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 200)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 18)
                         .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.7)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.black)
                         )
-                        .cornerRadius(20)
+                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                     }
                     
                     // Rewards Button
                     Button(action: {
                         // Will navigate to rewards later
                     }) {
-                        HStack {
+                        HStack(spacing: 16) {
                             Image(systemName: "trophy.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.white)
-                                .frame(width: 60)
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(.black)
                             
-                            Text("Rewards")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
+                            Text("View Rewards")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.black)
                             
                             Spacer()
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.black.opacity(0.5))
                         }
-                        .padding()
-                        .background(Color.orange)
-                        .cornerRadius(15)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(Color(.systemGray4), lineWidth: 1.5)
+                                )
+                        )
                     }
                 }
-                .padding(.horizontal, 40)
-                
-                Spacer()
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
             }
             .background(Color.white)
             .navigationBarHidden(true)
