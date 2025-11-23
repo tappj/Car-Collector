@@ -257,6 +257,7 @@ struct CustomCameraView: View {
                     
                     if showFlash {
                         Color.white
+                            .opacity(0.7)
                             .ignoresSafeArea()
                             .transition(.opacity)
                     }
@@ -409,7 +410,7 @@ struct CustomCameraView: View {
                                 }
                             }
                             .padding(.bottom, 40)
-                        } else {
+                        } else if showCaptureFrame {
                             Button(action: capturePhoto) {
                                 ZStack {
                                     Circle()
@@ -431,22 +432,14 @@ struct CustomCameraView: View {
     }
     
     func capturePhoto() {
-        // Hide capture frame when taking photo
-        withAnimation(.easeInOut(duration: 0.15)) {
-            showCaptureFrame = false
-        }
+        // Hide capture frame and button immediately (no animation)
+        showCaptureFrame = false
         
-        // Flash effect
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showFlash = true
-            }
-        }
+        // Instantaneous flash effect
+        showFlash = true
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showFlash = false
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            showFlash = false
         }
         
         camera.takePicture { image in
