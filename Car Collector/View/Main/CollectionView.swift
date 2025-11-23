@@ -61,17 +61,22 @@ struct CollectionView: View {
             } else {
                 List {
                     ForEach(cars) { car in
-                        CarCardView(car: car, onTap: { openCarDetail(car) })
-                            .listRowInsets(EdgeInsets(top: 7.5, leading: 16, bottom: 7.5, trailing: 16))
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.gray.opacity(0.05))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    confirmDelete(car)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
+                        Button(action: {
+                            openCarDetail(car)
+                        }) {
+                            CarCardView(car: car)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .listRowInsets(EdgeInsets(top: 7.5, leading: 16, bottom: 7.5, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.gray.opacity(0.05))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                confirmDelete(car)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
+                        }
                     }
                 }
                 .listStyle(.plain)
@@ -206,51 +211,46 @@ struct CollectionView: View {
 
 struct CarCardView: View {
     let car: Car
-    let onTap: () -> Void
     @State private var carImage: UIImage?
     @State private var isLoadingImage = true
     
     var body: some View {
         HStack(spacing: 15) {
+            // Car Image
             ZStack {
                 Circle()
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 60, height: 60)
+                    .fill(Color.gray.opacity(0.1))
+                    .frame(width: 70, height: 70)
                 
                 if isLoadingImage {
                     ProgressView()
-                        .scaleEffect(0.7)
                 } else if let image = carImage {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 60, height: 60)
+                        .frame(width: 70, height: 70)
                         .clipShape(Circle())
+                        .rotationEffect(.degrees(270))
                 } else {
                     Image(systemName: "car.fill")
-                        .font(.system(size: 28))
-                        .foregroundColor(.blue.opacity(0.5))
+                        .font(.system(size: 30))
+                        .foregroundColor(.gray.opacity(0.5))
                 }
             }
             
-            VStack(alignment: .leading, spacing: 5) {
+            // Car Details
+            VStack(alignment: .leading, spacing: 6) {
                 Text(car.name)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.black)
-                    .lineLimit(2)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
                 
                 Text(formatDate(car.dateCaptured))
-                    .font(.caption)
+                    .font(.system(size: 13))
                     .foregroundColor(.gray)
                 
-                HStack(spacing: 4) {
-                    Image(systemName: "star.fill")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                    Text("\(car.points) points")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.orange)
-                }
+                Text("\(car.points) points")
+                    .font(.system(size: 13))
+                    .foregroundColor(.blue)
             }
             
             Spacer()
@@ -263,10 +263,6 @@ struct CarCardView: View {
         .background(Color.white)
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onTap()
-        }
         .onAppear {
             loadCarImage()
         }
