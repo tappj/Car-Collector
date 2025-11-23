@@ -1,0 +1,15 @@
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Firebase
+GoogleService-Info.plist
+
+# Build
+build/
+DerivedData/
+
+# CocoaPods
+Pods/
+

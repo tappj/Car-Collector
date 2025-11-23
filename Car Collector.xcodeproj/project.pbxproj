@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		83892C192ECA98A600BB9762 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 83892C182ECA98A600BB9762 /* FirebaseAuth */; };
+		83892C1B2ECA98A600BB9762 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 83892C1A2ECA98A600BB9762 /* FirebaseCore */; };
+		83892C1D2ECA98A600BB9762 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 83892C1C2ECA98A600BB9762 /* FirebaseFirestore */; };
+		83892C1F2ECA98A600BB9762 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 83892C1E2ECA98A600BB9762 /* FirebaseStorage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		832014AE2EC999BE000EFB62 /* Car Collector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Car Collector.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +30,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				83892C1B2ECA98A600BB9762 /* FirebaseCore in Frameworks */,
+				83892C1F2ECA98A600BB9762 /* FirebaseStorage in Frameworks */,
+				83892C192ECA98A600BB9762 /* FirebaseAuth in Frameworks */,
+				83892C1D2ECA98A600BB9762 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +76,10 @@
 			);
 			name = "Car Collector";
 			packageProductDependencies = (
+				83892C182ECA98A600BB9762 /* FirebaseAuth */,
+				83892C1A2ECA98A600BB9762 /* FirebaseCore */,
+				83892C1C2ECA98A600BB9762 /* FirebaseFirestore */,
+				83892C1E2ECA98A600BB9762 /* FirebaseStorage */,
 			);
 			productName = "Car Collector";
 			productReference = 832014AE2EC999BE000EFB62 /* Car Collector.app */;
@@ -94,6 +109,9 @@
 			);
 			mainGroup = 832014A52EC999BD000EFB62;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				83892C172ECA822900BB9762 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 832014AF2EC999BE000EFB62 /* Products */;
 			projectDirPath = "";
@@ -256,11 +274,13 @@
 				DEVELOPMENT_TEAM = 3X84A34AP5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan cars";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -288,11 +308,13 @@
 				DEVELOPMENT_TEAM = 3X84A34AP5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan cars";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -332,6 +354,40 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		83892C172ECA822900BB9762 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		83892C182ECA98A600BB9762 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83892C172ECA822900BB9762 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		83892C1A2ECA98A600BB9762 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83892C172ECA822900BB9762 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		83892C1C2ECA98A600BB9762 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83892C172ECA822900BB9762 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		83892C1E2ECA98A600BB9762 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83892C172ECA822900BB9762 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 832014A62EC999BD000EFB62 /* Project object */;
 }
