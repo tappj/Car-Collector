@@ -19,6 +19,7 @@ struct CustomCameraView: View {
     @State private var cameraReady = false
     @State private var showCaptureFrame = true
     @State private var isReviewingPhoto = false
+    @State private var showNotCarAlert = false
     
     var body: some View {
         ZStack {
@@ -334,6 +335,49 @@ struct CustomCameraView: View {
                     )
                 }
                 
+                // Not a car alert
+                if showNotCarAlert {
+                    ZStack {
+                        Color.black.opacity(0.7)
+                            .edgesIgnoringSafeArea(.all)
+                        
+                        VStack(spacing: 20) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.red)
+                            
+                            Text("Car not identified")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                            
+                            Text("Please take a photo of a car")
+                                .font(.body)
+                                .foregroundColor(.white.opacity(0.8))
+                                .multilineTextAlignment(.center)
+                            
+                            Button(action: {
+                                showNotCarAlert = false
+                                capturedImage = nil
+                                showCaptureFrame = true
+                            }) {
+                                Text("OK")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(width: 120)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .cornerRadius(15)
+                            }
+                            .padding(.top, 10)
+                        }
+                        .padding(40)
+                        .background(Color.black.opacity(0.9))
+                        .cornerRadius(25)
+                        .padding(40)
+                    }
+                }
+                
                 // Exit button - positioned with absolute coordinates
                 if !isIdentifying && identifiedCar.isEmpty {
                     Button(action: {
@@ -462,7 +506,11 @@ struct CustomCameraView: View {
         let prompt = """
         You are an expert automotive identification AI with deep knowledge of all vehicle makes and models.
 
-        Analyze this image carefully and identify:
+        IMPORTANT: First, determine if this image contains a CAR (automobile, vehicle with 4 wheels designed for road transportation).
+        
+        If the image does NOT contain a car (e.g., it's a person, building, animal, motorcycle, bicycle, truck, bus, or any other non-car object), respond with ONLY the word: NOT_A_CAR
+        
+        If the image DOES contain a car, analyze it carefully and identify:
         1. The exact make (manufacturer)
         2. The specific model name and variant
         3. The body style (sedan, coupe, SUV, roadster, convertible, etc.)
@@ -488,6 +536,8 @@ struct CustomCameraView: View {
         Example: 2017-2022 Lamborghini Aventador S Roadster
         Example: 2020-2023 Toyota Camry XSE Sedan
         Example: 2021-2024 BMW M3 Competition
+        
+        Remember: If it's NOT a car, respond with: NOT_A_CAR
         """
         
         let requestBody: [String: Any] = [
@@ -537,6 +587,12 @@ struct CustomCameraView: View {
                     let carName = text
                         .trimmingCharacters(in: .whitespacesAndNewlines)
                         .replacingOccurrences(of: "\n", with: " ")
+                    
+                    // Check if it's not a car
+                    if carName.uppercased().contains("NOT_A_CAR") || carName.uppercased() == "NOT_A_CAR" {
+                        self.showNotCarAlert = true
+                        return
+                    }
                     
                     self.identifiedCar = carName
                     
