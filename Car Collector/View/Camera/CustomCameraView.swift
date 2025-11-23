@@ -18,6 +18,7 @@ struct CustomCameraView: View {
     @State private var showFlash = false
     @State private var cameraReady = false
     @State private var showCaptureFrame = true
+    @State private var isReviewingPhoto = false
     
     var body: some View {
         ZStack {
@@ -247,118 +248,186 @@ struct CustomCameraView: View {
     }
     
     var cameraView: some View {
-        ZStack {
-            CameraPreview(camera: camera)
-                .ignoresSafeArea()
-            
-            if showFlash {
-                Color.white
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-            }
-            
-            // Capture frame overlay
-            if showCaptureFrame && !isIdentifying {
-                GeometryReader { geometry in
-                    let frameWidth = geometry.size.width * 0.82
-                    let frameHeight = geometry.size.height * 0.64
-                    let cornerLength: CGFloat = 28
-                    let cornerThickness: CGFloat = 3.5
-                    let frameX = geometry.size.width / 2
-                    let frameY = (geometry.size.height / 2) - 30
+        GeometryReader { geometry in
+            ZStack {
+                // Base camera layer
+                ZStack {
+                    CameraPreview(camera: camera)
+                        .ignoresSafeArea()
                     
-                    // Top-left corner
-                    Path { path in
-                        path.move(to: CGPoint(x: frameX - frameWidth/2, y: frameY - frameHeight/2 + cornerLength))
-                        path.addLine(to: CGPoint(x: frameX - frameWidth/2, y: frameY - frameHeight/2))
-                        path.addLine(to: CGPoint(x: frameX - frameWidth/2 + cornerLength, y: frameY - frameHeight/2))
+                    if showFlash {
+                        Color.white
+                            .ignoresSafeArea()
+                            .transition(.opacity)
                     }
-                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
                     
-                    // Top-right corner
-                    Path { path in
-                        path.move(to: CGPoint(x: frameX + frameWidth/2 - cornerLength, y: frameY - frameHeight/2))
-                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY - frameHeight/2))
-                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY - frameHeight/2 + cornerLength))
-                    }
-                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
-                    
-                    // Bottom-left corner
-                    Path { path in
-                        path.move(to: CGPoint(x: frameX - frameWidth/2, y: frameY + frameHeight/2 - cornerLength))
-                        path.addLine(to: CGPoint(x: frameX - frameWidth/2, y: frameY + frameHeight/2))
-                        path.addLine(to: CGPoint(x: frameX - frameWidth/2 + cornerLength, y: frameY + frameHeight/2))
-                    }
-                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
-                    
-                    // Bottom-right corner
-                    Path { path in
-                        path.move(to: CGPoint(x: frameX + frameWidth/2 - cornerLength, y: frameY + frameHeight/2))
-                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY + frameHeight/2))
-                        path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY + frameHeight/2 - cornerLength))
-                    }
-                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
-                }
-                .ignoresSafeArea()
-            }
-            
-            if isIdentifying {
-                ScanningOverlay()
-            }
-            
-            if !identifiedCar.isEmpty && !isIdentifying {
-                CelebrationView(
-                    carName: identifiedCar,
-                    onScanAnother: {
-                        identifiedCar = ""
-                        capturedImage = nil
-                        showCaptureFrame = true
-                    },
-                    onViewCollection: {
-                        presentationMode.wrappedValue.dismiss()
-                        // Post notification to switch to Collection tab
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            NotificationCenter.default.post(name: NSNotification.Name("SwitchToCollectionTab"), object: nil)
-                        }
-                    }
-                )
-            }
-            
-            if !isIdentifying && identifiedCar.isEmpty {
-                VStack {
-                    HStack {
-                        Button(action: {
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 18))
-                                .foregroundColor(.white)
-                                .padding(10)
-                                .background(Color.white.opacity(0.3))
-                                .clipShape(Circle())
-                        }
+                    // Photo review image - replaces camera when reviewing
+                    if isReviewingPhoto, let image = capturedImage {
+                        Color.black
+                            .ignoresSafeArea()
                         
-                        Spacer()
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                            .clipped()
+                            .ignoresSafeArea()
                     }
-                    .padding()
-                    
-                    Spacer()
-                    
-                    Button(action: capturePhoto) {
-                        ZStack {
-                            Circle()
-                                .stroke(Color.white, lineWidth: 3)
-                                .frame(width: 80, height: 80)
-                            
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 65, height: 65)
+                }
+                
+                // Capture frame overlay
+                if showCaptureFrame && !isIdentifying && !isReviewingPhoto {
+                    GeometryReader { frameGeometry in
+                        let frameWidth = frameGeometry.size.width * 0.82
+                        let frameHeight = frameGeometry.size.height * 0.64
+                        let cornerLength: CGFloat = 28
+                        let cornerThickness: CGFloat = 3.5
+                        let frameX = frameGeometry.size.width / 2
+                        let frameY = (frameGeometry.size.height / 2) - 30
+                        
+                        // Top-left corner
+                        Path { path in
+                            path.move(to: CGPoint(x: frameX - frameWidth/2, y: frameY - frameHeight/2 + cornerLength))
+                            path.addLine(to: CGPoint(x: frameX - frameWidth/2, y: frameY - frameHeight/2))
+                            path.addLine(to: CGPoint(x: frameX - frameWidth/2 + cornerLength, y: frameY - frameHeight/2))
+                        }
+                        .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                        
+                        // Top-right corner
+                        Path { path in
+                            path.move(to: CGPoint(x: frameX + frameWidth/2 - cornerLength, y: frameY - frameHeight/2))
+                            path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY - frameHeight/2))
+                            path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY - frameHeight/2 + cornerLength))
+                        }
+                        .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                        
+                        // Bottom-left corner
+                        Path { path in
+                            path.move(to: CGPoint(x: frameX - frameWidth/2, y: frameY + frameHeight/2 - cornerLength))
+                            path.addLine(to: CGPoint(x: frameX - frameWidth/2, y: frameY + frameHeight/2))
+                            path.addLine(to: CGPoint(x: frameX - frameWidth/2 + cornerLength, y: frameY + frameHeight/2))
+                        }
+                        .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                        
+                        // Bottom-right corner
+                        Path { path in
+                            path.move(to: CGPoint(x: frameX + frameWidth/2 - cornerLength, y: frameY + frameHeight/2))
+                            path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY + frameHeight/2))
+                            path.addLine(to: CGPoint(x: frameX + frameWidth/2, y: frameY + frameHeight/2 - cornerLength))
+                        }
+                        .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: cornerThickness, lineCap: .round, lineJoin: .round))
+                    }
+                    .ignoresSafeArea()
+                }
+                
+                if isIdentifying {
+                    ScanningOverlay()
+                }
+                
+                if !identifiedCar.isEmpty && !isIdentifying {
+                    CelebrationView(
+                        carName: identifiedCar,
+                        onScanAnother: {
+                            identifiedCar = ""
+                            capturedImage = nil
+                            showCaptureFrame = true
+                        },
+                        onViewCollection: {
+                            presentationMode.wrappedValue.dismiss()
+                            // Post notification to switch to Collection tab
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                NotificationCenter.default.post(name: NSNotification.Name("SwitchToCollectionTab"), object: nil)
+                            }
+                        }
+                    )
+                }
+                
+                // Exit button - positioned with absolute coordinates
+                if !isIdentifying && identifiedCar.isEmpty {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.white.opacity(0.3))
+                            .clipShape(Circle())
+                    }
+                    .position(x: 38, y: 70)
+                    .zIndex(100)
+                }
+                
+                // Bottom buttons - positioned at the bottom
+                if !isIdentifying && identifiedCar.isEmpty {
+                    VStack {
+                        Spacer()
+                        
+                        if isReviewingPhoto {
+                            HStack(spacing: 40) {
+                                // Retake button
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        isReviewingPhoto = false
+                                        capturedImage = nil
+                                        showCaptureFrame = true
+                                    }
+                                }) {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "arrow.clockwise")
+                                            .font(.system(size: 28))
+                                            .foregroundColor(.white)
+                                        
+                                        Text("Retake")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                
+                                // Identify button
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        isReviewingPhoto = false
+                                        isIdentifying = true
+                                        if let image = capturedImage {
+                                            identifyCarWithGemini(image: image)
+                                        }
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Text("Identify")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 18, weight: .semibold))
+                                    }
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 30)
+                                    .padding(.vertical, 15)
+                                    .background(Color.white)
+                                    .cornerRadius(25)
+                                }
+                            }
+                            .padding(.bottom, 40)
+                        } else {
+                            Button(action: capturePhoto) {
+                                ZStack {
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 3)
+                                        .frame(width: 80, height: 80)
+                                    
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 65, height: 65)
+                                }
+                            }
+                            .padding(.bottom, 80)
                         }
                     }
-                    .padding(.bottom, 40)
                 }
             }
         }
+        .ignoresSafeArea()
     }
     
     func capturePhoto() {
@@ -383,8 +452,10 @@ struct CustomCameraView: View {
         camera.takePicture { image in
             if let image = image {
                 capturedImage = image
-                isIdentifying = true
-                identifyCarWithGemini(image: image)
+                // Show review screen instead of immediately identifying
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isReviewingPhoto = true
+                }
             }
         }
     }
