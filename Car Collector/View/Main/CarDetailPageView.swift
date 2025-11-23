@@ -146,6 +146,14 @@ struct CarDetailPageView: View {
                                 .background(Color.gray.opacity(0.1))
                                 .cornerRadius(8)
                                 .focused($isNotesFieldFocused)
+                                .toolbar {
+                                        ToolbarItemGroup(placement: .keyboard) {
+                                            Spacer()
+                                            Button("Done") {
+                                                isNotesFieldFocused = false
+                                            }
+                                        }
+                                    }
                                 .onChange(of: notes) { newValue in
                                     // Limit to 250 characters
                                     if newValue.count > 250 {
@@ -156,7 +164,7 @@ struct CarDetailPageView: View {
                                     VStack {
                                         if notes.isEmpty && !isNotesFieldFocused {
                                             HStack {
-                                                Text("Add notes about this car (mods, location, car meet, etc.)")
+                                                Text("Add notes about this car (mods, location, personal details, etc.)")
                                                     .font(.system(size: 14))
                                                     .foregroundColor(.gray.opacity(0.6))
                                                     .padding(.leading, 12)
