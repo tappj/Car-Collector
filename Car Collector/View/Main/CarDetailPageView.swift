@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 struct CarDetailPageView: View {
     let car: Car

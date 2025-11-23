@@ -15,63 +15,24 @@ struct CollectionView: View {
     @State private var showCarDetail = false
     @State private var carToDelete: Car?
     @State private var showDeleteConfirmation = false
-    @State private var searchText = ""
-    
-    var filteredCars: [Car] {
-        if searchText.isEmpty {
-            return cars
-        } else {
-            return cars.filter { car in
-                car.name.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-    }
     
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 0) {
-                HStack {
-                    Text("My Collection")
-                        .font(.system(size: 34, weight: .bold))
-                    
-                    Spacer()
-                    
-                    Text("\(filteredCars.count) Cars")
-                        .font(.system(size: 20))
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 8)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(20)
-                }
-                .padding()
+            HStack {
+                Text("My Collection")
+                    .font(.system(size: 34, weight: .bold))
                 
-                // Search Bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
-                    
-                    TextField("Search cars...", text: $searchText)
-                        .font(.system(size: 16))
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                    
-                    if !searchText.isEmpty {
-                        Button(action: {
-                            searchText = ""
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(10)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+                Spacer()
+                
+                Text("\(cars.count) Cars")
+                    .font(.system(size: 20))
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 8)
+                    .background(Color.blue.opacity(0.2))
+                    .cornerRadius(20)
             }
+            .padding()
             .background(Color.white)
             
             if isLoading {
@@ -97,27 +58,9 @@ struct CollectionView: View {
                         .padding(.horizontal, 40)
                 }
                 Spacer()
-            } else if filteredCars.isEmpty {
-                Spacer()
-                VStack(spacing: 20) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 80))
-                        .foregroundColor(.gray.opacity(0.5))
-                    
-                    Text("No results found")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(.gray)
-                    
-                    Text("Try a different search term")
-                        .font(.body)
-                        .foregroundColor(.gray.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                }
-                Spacer()
             } else {
                 List {
-                    ForEach(filteredCars) { car in
+                    ForEach(cars) { car in
                         Button(action: {
                             openCarDetail(car)
                         }) {
@@ -271,43 +214,84 @@ struct CarCardView: View {
     @State private var carImage: UIImage?
     @State private var isLoadingImage = true
     
+    // Helper to get category badge color (solid)
+    var categoryBadgeColor: Color {
+        let category = car.carCategory
+        switch category {
+        case .common:
+            return Color.gray
+        case .uncommon:
+            return Color.blue
+        case .rare:
+            return Color.purple
+        case .exotic:
+            return Color.orange
+        case .legendary:
+            return Color(red: 1.0, green: 0.84, blue: 0.0) // Gold
+        }
+    }
+    
+    // Remove year range from car name
+    var displayName: String {
+        let name = car.name
+        // Remove patterns like "2020-2023 " or "2020 " from the beginning
+        let pattern = "^\\d{4}(-\\d{4})?\\s+"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+            let range = NSRange(name.startIndex..., in: name)
+            let cleanedName = regex.stringByReplacingMatches(in: name, options: [], range: range, withTemplate: "")
+            return cleanedName
+        }
+        return name
+    }
+    
     var body: some View {
         HStack(spacing: 15) {
             // Car Image
-            ZStack {
-                Circle()
-                    .fill(Color.gray.opacity(0.1))
-                    .frame(width: 70, height: 70)
-                
+            Group {
                 if isLoadingImage {
                     ProgressView()
-                } else if let image = carImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 70, height: 70)
-                        .clipShape(Circle())
-                        .rotationEffect(.degrees(270))
+                        .frame(width: 60, height: 60)
                 } else {
-                    Image(systemName: "car.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.gray.opacity(0.5))
+                    if let carImage = carImage {
+                        Image(uiImage: carImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 60, height: 60)
+                            .clipped()
+                            .cornerRadius(10)
+                            .rotationEffect(.degrees(270))
+                    } else {
+                        Image(systemName: "car.fill")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 60, height: 60)
+                            .clipped()
+                            .cornerRadius(10)
+                            .foregroundColor(.gray.opacity(0.5))
+                    }
                 }
             }
+            .frame(width: 60, height: 60)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(10)
+            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             
             // Car Details
             VStack(alignment: .leading, spacing: 6) {
-                Text(car.name)
+                Text(displayName)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                Text(formatDate(car.dateCaptured))
-                    .font(.system(size: 13))
-                    .foregroundColor(.gray)
-                
-                Text("\(car.points) points")
-                    .font(.system(size: 13))
-                    .foregroundColor(.blue)
+                // Category badge instead of points
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(categoryBadgeColor)
+                        .frame(width: 8, height: 8)
+                    
+                    Text(car.carCategory.rawValue)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(categoryBadgeColor)
+                }
             }
             
             Spacer()

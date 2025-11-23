@@ -49,6 +49,7 @@ struct Car: Identifiable, Codable {
     var dateCaptured: Date
     var points: Int
     var category: String?
+    var isFavorite: Bool?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -57,14 +58,16 @@ struct Car: Identifiable, Codable {
         case dateCaptured
         case points
         case category
+        case isFavorite
     }
     
-    init(name: String, imageURL: String? = nil, dateCaptured: Date = Date(), points: Int = 10, category: String? = nil) {
+    init(name: String, imageURL: String? = nil, dateCaptured: Date = Date(), points: Int = 10, category: String? = nil, isFavorite: Bool? = false) {
         self.name = name
         self.imageURL = imageURL
         self.dateCaptured = dateCaptured
         self.points = points
         self.category = category
+        self.isFavorite = isFavorite
     }
     
     var carCategory: CarCategory {
