@@ -284,10 +284,10 @@ struct CustomCameraView: View {
                             presentationMode.wrappedValue.dismiss()
                         }) {
                             Image(systemName: "xmark")
-                                .font(.title2)
+                                .font(.system(size: 18))
                                 .foregroundColor(.white)
-                                .padding()
-                                .background(Color.black.opacity(0.5))
+                                .padding(10)
+                                .background(Color.white.opacity(0.3))
                                 .clipShape(Circle())
                         }
                         
@@ -300,7 +300,7 @@ struct CustomCameraView: View {
                     Button(action: capturePhoto) {
                         ZStack {
                             Circle()
-                                .stroke(Color.white, lineWidth: 5)
+                                .stroke(Color.white, lineWidth: 3)
                                 .frame(width: 80, height: 80)
                             
                             Circle()

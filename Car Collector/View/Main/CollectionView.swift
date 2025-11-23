@@ -15,24 +15,63 @@ struct CollectionView: View {
     @State private var showCarDetail = false
     @State private var carToDelete: Car?
     @State private var showDeleteConfirmation = false
+    @State private var searchText = ""
+    
+    var filteredCars: [Car] {
+        if searchText.isEmpty {
+            return cars
+        } else {
+            return cars.filter { car in
+                car.name.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("My Collection")
-                    .font(.system(size: 34, weight: .bold))
+            VStack(spacing: 0) {
+                HStack {
+                    Text("My Collection")
+                        .font(.system(size: 34, weight: .bold))
+                    
+                    Spacer()
+                    
+                    Text("\(filteredCars.count) Cars")
+                        .font(.system(size: 20))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 15)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.2))
+                        .cornerRadius(20)
+                }
+                .padding()
                 
-                Spacer()
-                
-                Text("\(cars.count) Cars")
-                    .font(.system(size: 20))
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 15)
-                    .padding(.vertical, 8)
-                    .background(Color.blue.opacity(0.2))
-                    .cornerRadius(20)
+                // Search Bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    
+                    TextField("Search cars...", text: $searchText)
+                        .font(.system(size: 16))
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
             }
-            .padding()
             .background(Color.white)
             
             if isLoading {
@@ -58,9 +97,27 @@ struct CollectionView: View {
                         .padding(.horizontal, 40)
                 }
                 Spacer()
+            } else if filteredCars.isEmpty {
+                Spacer()
+                VStack(spacing: 20) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 80))
+                        .foregroundColor(.gray.opacity(0.5))
+                    
+                    Text("No results found")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.gray)
+                    
+                    Text("Try a different search term")
+                        .font(.body)
+                        .foregroundColor(.gray.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                Spacer()
             } else {
                 List {
-                    ForEach(cars) { car in
+                    ForEach(filteredCars) { car in
                         Button(action: {
                             openCarDetail(car)
                         }) {
