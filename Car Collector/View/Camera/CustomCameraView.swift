@@ -20,6 +20,8 @@ struct CustomCameraView: View {
     @State private var showCaptureFrame = true
     @State private var isReviewingPhoto = false
     @State private var showNotCarAlert = false
+    @State private var carCategory: CarCategory = .common
+    @State private var earnedPoints: Int = 10
     
     var body: some View {
         ZStack {
@@ -111,11 +113,23 @@ struct CustomCameraView: View {
     
     struct CelebrationView: View {
         let carName: String
+        let category: CarCategory
+        let points: Int
         let onScanAnother: () -> Void
         let onViewCollection: () -> Void
         
         @State private var scale: CGFloat = 0.5
         @State private var opacity: Double = 0
+        
+        var categoryColor: Color {
+            switch category {
+            case .common: return .gray
+            case .uncommon: return .blue
+            case .rare: return .purple
+            case .exotic: return .orange
+            case .legendary: return Color(red: 1.0, green: 0.84, blue: 0.0) // Gold
+            }
+        }
         
         var body: some View {
             ZStack {
@@ -127,7 +141,7 @@ struct CustomCameraView: View {
                 VStack(spacing: 25) {
                     ZStack {
                         Circle()
-                            .fill(Color.green)
+                            .fill(categoryColor)
                             .frame(width: 100, height: 100)
                         
                         Image(systemName: "car.fill")
@@ -135,21 +149,39 @@ struct CustomCameraView: View {
                             .foregroundColor(.white)
                     }
                     
-                    Text("Car Found!")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
+                    VStack(spacing: 10) {
+                        Text("Car Found!")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                        
+                        // Category badge
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(categoryColor)
+                                .frame(width: 12, height: 12)
+                            
+                            Text(category.rawValue)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(categoryColor)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(categoryColor.opacity(0.2))
+                        .cornerRadius(20)
+                    }
                     
                     Text(carName)
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.green)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                     
                     HStack {
                         Image(systemName: "star.fill")
                             .foregroundColor(.yellow)
-                        Text("+10 Points")
+                        Text("+\(points) Points")
                             .font(.headline)
                             .foregroundColor(.yellow)
                     }
@@ -320,6 +352,8 @@ struct CustomCameraView: View {
                 if !identifiedCar.isEmpty && !isIdentifying {
                     CelebrationView(
                         carName: identifiedCar,
+                        category: carCategory,
+                        points: earnedPoints,
                         onScanAnother: {
                             identifiedCar = ""
                             capturedImage = nil
@@ -611,61 +645,244 @@ struct CustomCameraView: View {
     func saveCar(name: String, image: UIImage) {
         print("💾 Starting to save car: \(name)")
         
-        let db = Firestore.firestore()
-        let storage = Storage.storage()
-        
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            print("❌ Failed to convert image to data")
-            return
-        }
-        
-        print("✅ Image converted to data, size: \(imageData.count) bytes")
-        
-        let imageRef = storage.reference().child("car_images/\(UUID().uuidString).jpg")
-        
-        print("📤 Uploading image to Firebase Storage...")
-        
-        let metadata = StorageMetadata()
-        metadata.contentType = "image/jpeg"
-        
-        imageRef.putData(imageData, metadata: metadata) { metadata, error in
-            if let error = error {
-                print("❌ Image upload failed: \(error.localizedDescription)")
+        // Categorize the car first
+        categorizeCarWithGemini(carName: name) { category in
+            // Store category and points in state for celebration view
+            self.carCategory = category
+            self.earnedPoints = self.pointsForCategory(category)
+            
+            let db = Firestore.firestore()
+            let storage = Storage.storage()
+            
+            guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                print("❌ Failed to convert image to data")
                 return
             }
             
-            print("✅ Image uploaded successfully")
+            print("✅ Image converted to data, size: \(imageData.count) bytes")
+            print("🏷️ Car categorized as: \(category.rawValue)")
             
-            imageRef.downloadURL { url, error in
+            let imageRef = storage.reference().child("car_images/\(UUID().uuidString).jpg")
+            
+            print("📤 Uploading image to Firebase Storage...")
+            
+            let metadata = StorageMetadata()
+            metadata.contentType = "image/jpeg"
+            
+            imageRef.putData(imageData, metadata: metadata) { metadata, error in
                 if let error = error {
-                    print("❌ Failed to get download URL: \(error.localizedDescription)")
+                    print("❌ Image upload failed: \(error.localizedDescription)")
                     return
                 }
                 
-                guard let downloadURL = url else {
-                    print("❌ Download URL is nil")
-                    return
-                }
+                print("✅ Image uploaded successfully")
                 
-                print("✅ Got download URL: \(downloadURL.absoluteString)")
-                
-                let carData: [String: Any] = [
-                    "name": name,
-                    "imageURL": downloadURL.absoluteString,
-                    "dateCaptured": Timestamp(date: Date()),
-                    "points": 10
-                ]
-                
-                print("📤 Saving to Firestore with data: \(carData)")
-                
-                db.collection("cars").addDocument(data: carData) { error in
+                imageRef.downloadURL { url, error in
                     if let error = error {
-                        print("❌ Firestore save failed: \(error.localizedDescription)")
-                    } else {
-                        print("✅ Car saved successfully to Firestore!")
+                        print("❌ Failed to get download URL: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let downloadURL = url else {
+                        print("❌ Download URL is nil")
+                        return
+                    }
+                    
+                    print("✅ Got download URL: \(downloadURL.absoluteString)")
+                    
+                    // Calculate points based on category
+                    let points = self.pointsForCategory(category)
+                    
+                    let carData: [String: Any] = [
+                        "name": name,
+                        "imageURL": downloadURL.absoluteString,
+                        "dateCaptured": Timestamp(date: Date()),
+                        "points": points,
+                        "category": category.rawValue
+                    ]
+                    
+                    print("📤 Saving to Firestore with data: \(carData)")
+                    
+                    db.collection("cars").addDocument(data: carData) { error in
+                        if let error = error {
+                            print("❌ Firestore save failed: \(error.localizedDescription)")
+                        } else {
+                            print("✅ Car saved successfully to Firestore with category: \(category.rawValue) and points: \(points)!")
+                        }
                     }
                 }
             }
+        }
+    }
+    
+    func categorizeCarWithGemini(carName: String, completion: @escaping (CarCategory) -> Void) {
+        // First try keyword detection for quick categorization
+        if let quickCategory = categorizeByKeywords(carName: carName) {
+            print("✅ Quick categorization by keywords: \(quickCategory.rawValue)")
+            completion(quickCategory)
+            return
+        }
+        
+        // If keywords don't match, use Gemini AI for reasoning
+        print("🤖 Using Gemini AI for categorization...")
+        
+        let apiKey = "AIzaSyBgWTL2l7PECw50GC2yaE5t3odm2Nqoa78"
+        let model = "gemini-2.0-flash-exp"
+        
+        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent?key=\(apiKey)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let prompt = """
+        Categorize this car: "\(carName)"
+        
+        Categories:
+        1. Common - Mass-market everyday cars, economy/mainstream brands (Honda Civic, Toyota Camry, Ford F-150)
+        2. Uncommon - Premium mainstream, performance variants, entry sports cars (Mazda MX-5, BMW 3 Series, Audi A4)
+        3. Rare - Luxury brands, high-performance, $80k-150k range (BMW M3, Porsche 911, Mercedes AMG GT)
+        4. Exotic - Exotic supercars, ultra-luxury, $150k-400k (Lamborghini, Ferrari, McLaren)
+        5. Legendary - Hypercars, classics, one-of-a-kind, $500k+ (Bugatti, Koenigsegg, classic collectibles)
+        
+        Respond with ONLY ONE WORD from these options: Common, Uncommon, Rare, Exotic, Legendary
+        """
+        
+        let requestBody: [String: Any] = [
+            "contents": [[
+                "parts": [
+                    ["text": prompt]
+                ]
+            ]],
+            "generationConfig": [
+                "temperature": 0.2,
+                "maxOutputTokens": 10
+            ]
+        ]
+        
+        request.httpBody = try? JSONSerialization.data(withJSONObject: requestBody)
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                guard let data = data, error == nil else {
+                    print("❌ Gemini categorization failed, defaulting to Common")
+                    completion(.common)
+                    return
+                }
+                
+                do {
+                    guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                          let candidates = json["candidates"] as? [[String: Any]],
+                          let content = candidates.first?["content"] as? [String: Any],
+                          let parts = content["parts"] as? [[String: Any]],
+                          let text = parts.first?["text"] as? String else {
+                        print("❌ Failed to parse Gemini response, defaulting to Common")
+                        completion(.common)
+                        return
+                    }
+                    
+                    let categoryText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let category = CarCategory(rawValue: categoryText) ?? .common
+                    
+                    print("✅ Gemini categorized as: \(category.rawValue)")
+                    completion(category)
+                    
+                } catch {
+                    print("❌ Error parsing response, defaulting to Common")
+                    completion(.common)
+                }
+            }
+        }.resume()
+    }
+    
+    func categorizeByKeywords(carName: String) -> CarCategory? {
+        let name = carName.lowercased()
+        
+        // Legendary keywords - Hypercars, classics, ultra-rare
+        let legendaryKeywords = [
+            "bugatti", "koenigsegg", "pagani", "mclaren f1", "ferrari f40", "ferrari f50",
+            "ferrari enzo", "ferrari laferrari", "porsche 918", "mclaren p1", "hypercar",
+            "hennessey venom", "ssc tuatara", "rimac", "czinger", "gordon murray t.50",
+            "aston martin valkyrie", "mercedes amg one", "ferrari 250 gto", "shelby cobra"
+        ]
+        
+        // Exotic keywords - Supercars and ultra-luxury
+        let exoticKeywords = [
+            "lamborghini", "ferrari 488", "ferrari 458", "ferrari 812", "ferrari roma",
+            "ferrari sf90", "mclaren 720s", "mclaren 765lt", "mclaren artura", "mclaren gt",
+            "bentley", "rolls-royce", "aston martin", "maserati mc20", "lotus evija",
+            "acura nsx", "lexus lfa", "aventador", "huracan", "countach"
+        ]
+        
+        // Rare keywords - Luxury performance and high-end sports
+        let rareKeywords = [
+            "porsche 911 turbo", "porsche 911 gt3", "porsche 911 gt2", "porsche taycan turbo",
+            "bmw m3", "bmw m4", "bmw m5", "bmw m8", "mercedes amg gt", "mercedes amg",
+            "audi r8", "audi rs6", "audi rs7", "corvette z06", "corvette zr1",
+            "nissan gt-r", "lexus lc", "cadillac ct5-v blackwing", "alfa romeo giulia quadrifoglio",
+            "jaguar f-type r", "maserati", "range rover sport sv"
+        ]
+        
+        // Uncommon keywords - Performance variants and premium
+        let uncommonKeywords = [
+            "bmw m340i", "bmw 4 series", "bmw m240i", "audi s4", "audi s5", "audi s3",
+            "mercedes c43", "mercedes e53", "porsche cayman", "porsche boxster",
+            "porsche macan", "corvette stingray", "camaro zl1", "camaro ss",
+            "mustang gt", "mustang shelby", "challenger srt", "charger srt",
+            "mazda mx-5", "miata", "subaru wrx", "subaru sti", "golf r", "golf gti",
+            "civic type r", "genesis g70", "genesis g80", "lexus is 350", "infiniti q50"
+        ]
+        
+        // Common keywords - Mass-market vehicles
+        let commonKeywords = [
+            "civic", "accord", "camry", "corolla", "altima", "sentra", "versa",
+            "jetta", "passat", "tiguan", "rav4", "cr-v", "pilot", "highlander",
+            "f-150", "silverado", "ram 1500", "tacoma", "ranger", "colorado",
+            "escape", "rogue", "equinox", "explorer", "traverse", "pathfinder",
+            "fusion", "malibu", "sonata", "elantra", "forte", "optima", "soul"
+        ]
+        
+        // Check in order from highest to lowest rarity
+        for keyword in legendaryKeywords {
+            if name.contains(keyword) {
+                return .legendary
+            }
+        }
+        
+        for keyword in exoticKeywords {
+            if name.contains(keyword) {
+                return .exotic
+            }
+        }
+        
+        for keyword in rareKeywords {
+            if name.contains(keyword) {
+                return .rare
+            }
+        }
+        
+        for keyword in uncommonKeywords {
+            if name.contains(keyword) {
+                return .uncommon
+            }
+        }
+        
+        for keyword in commonKeywords {
+            if name.contains(keyword) {
+                return .common
+            }
+        }
+        
+        // Return nil if no keywords match, so Gemini can be used
+        return nil
+    }
+    
+    func pointsForCategory(_ category: CarCategory) -> Int {
+        switch category {
+        case .common: return 10
+        case .uncommon: return 25
+        case .rare: return 50
+        case .exotic: return 100
+        case .legendary: return 250
         }
     }
 }
