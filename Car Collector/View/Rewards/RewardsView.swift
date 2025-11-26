@@ -46,10 +46,8 @@ struct RewardsView: View {
                         
                         Spacer()
                         
-                        HStack(spacing: 6) {
-                            Image(systemName: "steeringwheel.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
+                        HStack(spacing: 8) {
+                            TireCoinIcon(size: 28, shadowRadius: 4)
                             
                             Text("\(achievementManager.totalCoins)")
                                 .font(.system(size: 22, weight: .bold))
@@ -261,9 +259,7 @@ struct AchievementCard: View {
                     
                     HStack(spacing: 12) {
                         HStack(spacing: 4) {
-                            Image(systemName: "steeringwheel.circle.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
+                            TireCoinIcon(size: 16, shadowRadius: 2)
                             Text("\(achievement.coinReward)")
                                 .font(.system(size: 13, weight: .semibold))
                         }
@@ -308,9 +304,7 @@ struct AchievementCard: View {
                     onClaim(achievement.id)
                 }) {
                     HStack(spacing: 8) {
-                        Image(systemName: "steeringwheel.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
+                        TireCoinIcon(size: 22, shadowRadius: 4)
                         
                         Text("Claim \(achievement.coinReward) Coins + \(achievement.xpReward) XP")
                             .font(.system(size: 15, weight: .bold))
