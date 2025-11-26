@@ -57,13 +57,15 @@ struct CollectionView: View {
                 
                 Spacer()
                 
-                Text("\(filteredCars.count) Cars")
-                    .font(.system(size: 20))
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 15)
-                    .padding(.vertical, 8)
-                    .background(Color.blue.opacity(0.2))
-                    .cornerRadius(20)
+                Text("\(filteredCars.count)")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(.systemGray6))
+                    )
             }
             .padding()
             .background(Color.white)

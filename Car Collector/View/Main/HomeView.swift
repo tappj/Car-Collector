@@ -6,9 +6,37 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 struct HomeView: View {
     @State private var showCamera = false
+    @State private var cars: [Car] = []
+    @State private var totalPoints: Int = 0
+    @State private var totalCars: Int = 0
+    
+    // Leveling system computed properties
+    var currentLevel: Int {
+        calculateLevel(from: totalPoints)
+    }
+    
+    var pointsForCurrentLevel: Int {
+        pointsRequiredForLevel(currentLevel)
+    }
+    
+    var pointsForNextLevel: Int {
+        pointsRequiredForLevel(currentLevel + 1)
+    }
+    
+    var progressToNextLevel: CGFloat {
+        if currentLevel >= 100 { return 1.0 }
+        let pointsInCurrentLevel = totalPoints - pointsForCurrentLevel
+        let pointsNeededForNext = pointsForNextLevel - pointsForCurrentLevel
+        return CGFloat(pointsInCurrentLevel) / CGFloat(pointsNeededForNext)
+    }
+    
+    var pointsUntilNextLevel: Int {
+        pointsForNextLevel - totalPoints
+    }
     
     var body: some View {
         NavigationView {
@@ -28,12 +56,12 @@ struct HomeView: View {
                 .padding(.top, 60)
                 .padding(.bottom, 40)
                 
-                // Quick Stats Card (Optional - shows collection overview)
+                // Quick Stats Card
                 VStack(spacing: 12) {
                     HStack(spacing: 20) {
                         // Total Cars
                         VStack(spacing: 4) {
-                            Text("0")
+                            Text("\(totalCars)")
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.primary)
                             Text("Cars")
@@ -47,7 +75,7 @@ struct HomeView: View {
                         
                         // Total Points
                         VStack(spacing: 4) {
-                            Text("0")
+                            Text("\(totalPoints)")
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.primary)
                             Text("Points")
@@ -59,12 +87,12 @@ struct HomeView: View {
                         Divider()
                             .frame(height: 40)
                         
-                        // Rarest
+                        // Level
                         VStack(spacing: 4) {
-                            Text("—")
+                            Text("\(currentLevel)")
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.primary)
-                            Text("Rarest")
+                            Text("Level")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                         }
@@ -78,6 +106,52 @@ struct HomeView: View {
                         .fill(Color(.systemGray6))
                 )
                 .padding(.horizontal, 24)
+                
+                // Level Progress Bar
+                if currentLevel < 100 {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Level \(currentLevel)")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Text("\(pointsUntilNextLevel) pts to Level \(currentLevel + 1)")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        // Progress Bar
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                // Background
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(.systemGray5))
+                                    .frame(height: 8)
+                                
+                                // Progress
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.black)
+                                    .frame(width: geometry.size.width * progressToNextLevel, height: 8)
+                            }
+                        }
+                        .frame(height: 8)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                } else {
+                    VStack(spacing: 8) {
+                        Text("🏆 MAX LEVEL 🏆")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.primary)
+                        Text("You've reached the highest level!")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                }
                 
                 Spacer()
                 
@@ -150,7 +224,74 @@ struct HomeView: View {
             .fullScreenCover(isPresented: $showCamera) {
                 CustomCameraView()
             }
+            .onAppear {
+                loadCarData()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToCollectionTab"))) { _ in
+                // Reload data when returning from scanning
+                loadCarData()
+            }
         }
+    }
+    
+    // MARK: - Data Loading
+    func loadCarData() {
+        let db = Firestore.firestore()
+        
+        db.collection("cars")
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    print("❌ Error loading cars: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ No documents found")
+                    return
+                }
+                
+                cars = documents.compactMap { document in
+                    try? document.data(as: Car.self)
+                }
+                
+                totalCars = cars.count
+                totalPoints = cars.reduce(0) { $0 + $1.points }
+                
+                print("✅ Loaded \(totalCars) cars with \(totalPoints) total points - Level \(currentLevel)")
+            }
+    }
+    
+    // MARK: - Leveling System
+    
+    // Exponential leveling: starts easy, gets progressively harder
+    // Level 1->2: 10 points
+    // Level 2->3: 15 points  
+    // Level 3->4: 23 points
+    // Grows exponentially to level 100
+    func pointsRequiredForLevel(_ level: Int) -> Int {
+        if level <= 1 { return 0 }
+        
+        var totalPoints = 0
+        for lvl in 2...level {
+            // Exponential formula: basePoints * (1.15^(level-2))
+            let pointsForThisLevel = Int(Double(10) * pow(1.15, Double(lvl - 2)))
+            totalPoints += pointsForThisLevel
+        }
+        
+        return totalPoints
+    }
+    
+    func calculateLevel(from points: Int) -> Int {
+        if points == 0 { return 1 }
+        
+        for level in 1...100 {
+            let requiredPoints = pointsRequiredForLevel(level + 1)
+            if points < requiredPoints {
+                return level
+            }
+        }
+        
+        return 100 // Max level
     }
 }
 
