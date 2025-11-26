@@ -31,12 +31,19 @@ struct MainTabView: View {
                 }
                 .tag(2)
             
-            SettingsView()
+            RaceView()
                 .tabItem {
-                    Image(systemName: selectedTab == 3 ? "gearshape.fill" : "gearshape")
-                    Text("Settings")
+                    Image(systemName: selectedTab == 3 ? "flag.checkered.2.crossed" : "flag.checkered.2.crossed")
+                    Text("Race")
                 }
                 .tag(3)
+            
+            SettingsView()
+                .tabItem {
+                    Image(systemName: selectedTab == 4 ? "gearshape.fill" : "gearshape")
+                    Text("Settings")
+                }
+                .tag(4)
         }
         .accentColor(.black)
         .onAppear {

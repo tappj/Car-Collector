@@ -56,6 +56,52 @@ struct HomeView: View {
                 .padding(.top, 60)
                 .padding(.bottom, 40)
                 
+                // Level Progress Bar (MOVED ABOVE STATS)
+                if currentLevel < 100 {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Level \(currentLevel)")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Text("\(pointsUntilNextLevel) pts to Level \(currentLevel + 1)")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        // Progress Bar
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                // Background
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(.systemGray5))
+                                    .frame(height: 8)
+                                
+                                // Progress
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.black)
+                                    .frame(width: geometry.size.width * progressToNextLevel, height: 8)
+                            }
+                        }
+                        .frame(height: 8)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                } else {
+                    VStack(spacing: 8) {
+                        Text("🏆 MAX LEVEL 🏆")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.primary)
+                        Text("You've reached the highest level!")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                }
+                
                 // Quick Stats Card
                 VStack(spacing: 12) {
                     HStack(spacing: 20) {
@@ -107,105 +153,59 @@ struct HomeView: View {
                 )
                 .padding(.horizontal, 24)
                 
-                // Level Progress Bar
-                if currentLevel < 100 {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Level \(currentLevel)")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text("\(pointsUntilNextLevel) pts to Level \(currentLevel + 1)")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        // Progress Bar
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                // Background
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(.systemGray5))
-                                    .frame(height: 8)
-                                
-                                // Progress
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.black)
-                                    .frame(width: geometry.size.width * progressToNextLevel, height: 8)
-                            }
-                        }
-                        .frame(height: 8)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
-                } else {
-                    VStack(spacing: 8) {
-                        Text("🏆 MAX LEVEL 🏆")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.primary)
-                        Text("You've reached the highest level!")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
-                }
-                
                 Spacer()
                 
                 // Main Action Buttons
                 VStack(spacing: 16) {
-                    // Scan Car Button
+                    // Scan Car Button (BIGGER)
                     Button(action: {
                         showCamera = true
                     }) {
                         HStack(spacing: 16) {
                             Image(systemName: "camera.fill")
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.system(size: 28, weight: .semibold))
                                 .foregroundColor(.white)
                             
                             Text("Scan New Car")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 20, weight: .bold))
                                 .foregroundColor(.white)
                             
                             Spacer()
                             
                             Image(systemName: "arrow.right")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.white.opacity(0.8))
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 18)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 22)
                         .background(
-                            RoundedRectangle(cornerRadius: 14)
+                            RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.black)
                         )
-                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
                     }
                     
-                    // Rewards Button
+                    // Rewards Button (smaller)
                     Button(action: {
                         // Will navigate to rewards later
                     }) {
                         HStack(spacing: 16) {
                             Image(systemName: "trophy.fill")
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(.black)
                             
                             Text("View Rewards")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(.black)
                             
                             Spacer()
                             
                             Image(systemName: "arrow.right")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 15, weight: .semibold))
                                 .foregroundColor(.black.opacity(0.5))
                         }
                         .padding(.horizontal, 24)
-                        .padding(.vertical, 18)
+                        .padding(.vertical, 16)
                         .background(
                             RoundedRectangle(cornerRadius: 14)
                                 .fill(Color.white)
@@ -228,7 +228,6 @@ struct HomeView: View {
                 loadCarData()
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToCollectionTab"))) { _ in
-                // Reload data when returning from scanning
                 loadCarData()
             }
         }
@@ -265,7 +264,7 @@ struct HomeView: View {
     
     // Exponential leveling: starts easy, gets progressively harder
     // Level 1->2: 10 points
-    // Level 2->3: 15 points  
+    // Level 2->3: 15 points
     // Level 3->4: 23 points
     // Grows exponentially to level 100
     func pointsRequiredForLevel(_ level: Int) -> Int {
