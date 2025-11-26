@@ -10,9 +10,11 @@ import FirebaseFirestore
 
 struct HomeView: View {
     @State private var showCamera = false
+    @State private var showRewards = false
     @State private var cars: [Car] = []
     @State private var totalPoints: Int = 0
     @State private var totalCars: Int = 0
+    @StateObject private var achievementManager = AchievementManager.shared
     
     // Leveling system computed properties
     var currentLevel: Int {
@@ -43,9 +45,30 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 // Header Section
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Car Collector")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.primary)
+                    HStack {
+                        Text("Car Collector")
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        // Coin Display
+                        HStack(spacing: 6) {
+                            Image(systemName: "centsign.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.black)
+                            
+                            Text("\(achievementManager.totalCoins)")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemGray6))
+                        )
+                    }
                     
                     Text("Discover and collect rare vehicles")
                         .font(.system(size: 16))
@@ -187,12 +210,22 @@ struct HomeView: View {
                     
                     // Rewards Button (smaller)
                     Button(action: {
-                        // Will navigate to rewards later
+                        showRewards = true
                     }) {
                         HStack(spacing: 16) {
-                            Image(systemName: "trophy.fill")
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundColor(.black)
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "trophy.fill")
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundColor(.black)
+                                
+                                // Notification Badge
+                                if achievementManager.hasNewAchievements {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 10, height: 10)
+                                        .offset(x: 8, y: -4)
+                                }
+                            }
                             
                             Text("View Rewards")
                                 .font(.system(size: 17, weight: .semibold))
@@ -223,6 +256,9 @@ struct HomeView: View {
             .navigationBarHidden(true)
             .fullScreenCover(isPresented: $showCamera) {
                 CustomCameraView()
+            }
+            .sheet(isPresented: $showRewards) {
+                RewardsView()
             }
             .onAppear {
                 loadCarData()
@@ -255,6 +291,9 @@ struct HomeView: View {
                 
                 totalCars = cars.count
                 totalPoints = cars.reduce(0) { $0 + $1.points }
+                
+                // Check for achievements
+                achievementManager.checkAchievements(cars: cars, level: currentLevel, totalPoints: totalPoints)
                 
                 print("✅ Loaded \(totalCars) cars with \(totalPoints) total points - Level \(currentLevel)")
             }
