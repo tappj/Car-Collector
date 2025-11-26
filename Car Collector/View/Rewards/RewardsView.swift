@@ -11,6 +11,7 @@ struct RewardsView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var achievementManager = AchievementManager.shared
     @State private var selectedCategory: AchievementCategory? = nil
+    @State private var showConfetti = false
     
     var filteredAchievements: [Achievement] {
         if let category = selectedCategory {
@@ -21,6 +22,16 @@ struct RewardsView: View {
     
     var unlockedCount: Int {
         achievementManager.achievements.filter { $0.isUnlocked }.count
+    }
+    
+    var totalCount: Int {
+        achievementManager.achievements.count
+    }
+    
+    var progressPercentage: Int {
+        guard totalCount > 0 else { return 0 }
+        let ratio = Double(unlockedCount) / Double(totalCount)
+        return Int(ratio * 100)
     }
     
     var body: some View {
@@ -36,9 +47,9 @@ struct RewardsView: View {
                         Spacer()
                         
                         HStack(spacing: 6) {
-                            Image(systemName: "centsign.circle.fill")
+                            Image(systemName: "steeringwheel.circle.fill")
                                 .font(.system(size: 24))
-                                .foregroundColor(.black)
+                                .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
                             
                             Text("\(achievementManager.totalCoins)")
                                 .font(.system(size: 22, weight: .bold))
@@ -54,13 +65,13 @@ struct RewardsView: View {
                     // Progress
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("\(unlockedCount)/\(achievementManager.achievements.count) Unlocked")
+                            Text("\(unlockedCount)/\(totalCount) Unlocked")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.secondary)
                             
                             Spacer()
                             
-                            Text("\(Int((Double(unlockedCount) / Double(achievementManager.achievements.count)) * 100))%")
+                            Text("\(progressPercentage)%")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.secondary)
                         }
@@ -71,9 +82,10 @@ struct RewardsView: View {
                                     .fill(Color(.systemGray5))
                                     .frame(height: 6)
                                 
+                                let progressWidth = geometry.size.width * CGFloat(unlockedCount) / CGFloat(totalCount)
                                 RoundedRectangle(cornerRadius: 6)
                                     .fill(Color.black)
-                                    .frame(width: geometry.size.width * CGFloat(unlockedCount) / CGFloat(achievementManager.achievements.count), height: 6)
+                                    .frame(width: progressWidth, height: 6)
                             }
                         }
                         .frame(height: 6)
@@ -143,7 +155,18 @@ struct RewardsView: View {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         ForEach(filteredAchievements) { achievement in
-                            AchievementCard(achievement: achievement)
+                            AchievementCard(
+                                achievement: achievement,
+                                onClaim: { achievementId in
+                                    achievementManager.claimAchievement(achievementId)
+                                    withAnimation {
+                                        showConfetti = true
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        showConfetti = false
+                                    }
+                                }
+                            )
                         }
                     }
                     .padding(24)
@@ -161,6 +184,14 @@ struct RewardsView: View {
                     .foregroundColor(.primary)
                 }
             }
+            .overlay(
+                Group {
+                    if showConfetti {
+                        ConfettiView()
+                            .allowsHitTesting(false)
+                    }
+                }
+            )
         }
     }
 }
@@ -201,67 +232,108 @@ struct CategoryChip: View {
 // MARK: - Achievement Card
 struct AchievementCard: View {
     let achievement: Achievement
+    let onClaim: (String) -> Void
     
     var body: some View {
-        HStack(spacing: 16) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(achievement.isUnlocked ? Color.black : Color(.systemGray5))
-                    .frame(width: 60, height: 60)
-                
-                Image(systemName: achievement.iconName)
-                    .font(.system(size: 26))
-                    .foregroundColor(achievement.isUnlocked ? .white : .gray)
-            }
-            
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(achievement.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(achievement.isUnlocked ? .primary : .secondary)
-                
-                Text(achievement.description)
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-                
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "centsign.circle.fill")
-                            .font(.system(size: 14))
-                        Text("\(achievement.coinReward)")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundColor(achievement.isUnlocked ? .black : .secondary)
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(achievement.isUnlocked ? Color.black : Color(.systemGray5))
+                        .frame(width: 60, height: 60)
                     
-                    if achievement.isUnlocked, let date = achievement.unlockedDate {
-                        Text("• \(formatDate(date))")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    } else {
-                        Text("• Locked")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
+                    Image(systemName: achievement.iconName)
+                        .font(.system(size: 26))
+                        .foregroundColor(achievement.isUnlocked ? .white : .gray)
                 }
-                .padding(.top, 4)
+                
+                // Content
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(achievement.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(achievement.isUnlocked ? .primary : .secondary)
+                    
+                    Text(achievement.description)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                    
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "steeringwheel.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
+                            Text("\(achievement.coinReward)")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundColor(achievement.isUnlocked ? .black : .secondary)
+                        
+                        if achievement.isUnlocked, let date = achievement.unlockedDate {
+                            Text("• \(formatDate(date))")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        } else if !achievement.isUnlocked {
+                            Text("• Locked")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+                
+                Spacer()
+                
+                // Status / Action
+                if achievement.isClaimed {
+                    // Already claimed
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.green)
+                } else if achievement.isUnlocked {
+                    // Can claim - show nothing, button will be below
+                    EmptyView()
+                } else {
+                    // Locked
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.gray)
+                }
             }
+            .padding(16)
             
-            Spacer()
-            
-            // Checkmark or lock
-            if achievement.isUnlocked {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.green)
-            } else {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.gray)
+            // Claim Button (only show if unlocked but not claimed)
+            if achievement.isUnlocked && !achievement.isClaimed {
+                Button(action: {
+                    onClaim(achievement.id)
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "steeringwheel.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
+                        
+                        Text("Claim \(achievement.coinReward) Coins + \(achievement.xpReward) XP")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 1.0, green: 0.84, blue: 0.0),
+                                Color(red: 0.85, green: 0.65, blue: 0.0)
+                            ]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
         }
-        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white)

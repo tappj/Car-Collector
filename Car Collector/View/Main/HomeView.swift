@@ -54,9 +54,9 @@ struct HomeView: View {
                         
                         // Coin Display
                         HStack(spacing: 6) {
-                            Image(systemName: "centsign.circle.fill")
+                            Image(systemName: "steeringwheel.circle.fill")
                                 .font(.system(size: 24))
-                                .foregroundColor(.black)
+                                .foregroundColor(Color(red: 1.0, green: 0.84, blue: 0.0))
                             
                             Text("\(achievementManager.totalCoins)")
                                 .font(.system(size: 20, weight: .bold))
@@ -265,6 +265,13 @@ struct HomeView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToCollectionTab"))) { _ in
                 loadCarData()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AddAchievementXP"))) { notification in
+                if let xp = notification.userInfo?["xp"] as? Int {
+                    totalPoints += xp
+                    // Update Firestore with new total if needed
+                    print("✅ Added \(xp) XP from achievement - New total: \(totalPoints)")
+                }
             }
         }
     }
