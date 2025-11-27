@@ -726,7 +726,7 @@ struct CustomCameraView: View {
         // If keywords don't match, use Gemini AI for reasoning
         print("🤖 Using Gemini AI for categorization...")
         
-        let apiKey = "AIzaSyBgWTL2l7PECw50GC2yaE5t3odm2Nqoa78"
+        let apiKey = "geminiAPIKey"
         let model = "gemini-2.0-flash-exp"
         
         let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent?key=\(apiKey)")!

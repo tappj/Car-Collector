@@ -9,7 +9,7 @@ import SwiftUI
 import FirebaseAuth
 
 struct SettingsView: View {
-    @AppStorage("isDarkMode") private var isDarkMode = false
+    @State private var isDarkMode = false
     @State private var currentUser: User?
     @State private var showSignInOptions = false
     @State private var showSignOutAlert = false
@@ -139,7 +139,7 @@ struct SettingsView: View {
                             .padding(.horizontal, 24)
                         
                         HStack(spacing: 16) {
-                            Image(systemName: isDarkMode ? "moon.fill" : "sun.max.fill")
+                            Image(systemName: "sun.max.fill")
                                 .font(.system(size: 24))
                                 .foregroundColor(.black)
                             
@@ -148,7 +148,7 @@ struct SettingsView: View {
                                     .font(.system(size: 17, weight: .semibold))
                                     .foregroundColor(.primary)
                                 
-                                Text(isDarkMode ? "Enabled" : "Disabled")
+                                Text("Disabled")
                                     .font(.system(size: 13))
                                     .foregroundColor(.secondary)
                             }
@@ -201,18 +201,19 @@ struct SettingsView: View {
                     currentUser = user
                 })
             }
-            .alert("Sign Out", isPresented: $showSignOutAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Sign Out", role: .destructive) {
-                    signOut()
-                }
-            } message: {
-                Text("Are you sure you want to sign out?")
+            .alert(isPresented: $showSignOutAlert) {
+                Alert(
+                    title: Text("Sign Out"),
+                    message: Text("Are you sure you want to sign out?"),
+                    primaryButton: .destructive(Text("Sign Out")) {
+                        signOut()
+                    },
+                    secondaryButton: .cancel()
+                )
             }
             .onAppear {
                 checkCurrentUser()
             }
-            .preferredColorScheme(isDarkMode ? .dark : .light)
         }
     }
     
